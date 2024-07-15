@@ -1,0 +1,57 @@
+name: Clean webhooks
+
+on:
+  workflow_dispatch: {}
+  schedule:
+  - cron: "0 */12 * * *"
+
+permissions:
+  id-token: write
+  issues: write
+
+jobs:
+  clean-webhooks:
+    name: Clean webhooks
+    runs-on: ["ubuntu-latest"]
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.MY_PAT }}
+          script: |
+            let page = 1;
+            let hasMore = true;
+          
+            while (hasMore) {
+              try {
+                // Get list of webhooks with pagination
+                const { data: webhooks } = await github.rest.repos.listWebhooks({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  per_page: 100,
+                  page,
+                });
+          
+                if (webhooks.length === 0) {
+                  hasMore = false;
+                  break;
+                }
+          
+                for (const hook of webhooks) {
+                  const hookId = hook.id;
+          
+                  // Delete the webhook
+                  await github.rest.repos.deleteWebhook({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    hook_id: hookId,
+                  });
+          
+                  console.log(`Deleted webhook ID: ${hookId}`);
+                }
+          
+                page += 1;
+              } catch (error) {
+                console.error(`Error fetching or deleting webhooks: ${error}`);
+                hasMore = false;
+              }
+            }
