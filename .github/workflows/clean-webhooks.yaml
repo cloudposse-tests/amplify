@@ -13,10 +13,11 @@ jobs:
   clean-webhooks:
     name: Clean webhooks
     runs-on: ["ubuntu-latest"]
+    environment: cleanup
     steps:
       - uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.MY_PAT }}
+          github-token: ${{ secrets.AMPLIFY_WEBHOOKS_CLEANUP_PAT }}
           script: |
             let page = 1;
             let hasMore = true;
